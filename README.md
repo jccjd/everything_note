@@ -1,2 +1,6 @@
-# everything_note
-everything node
+# 记录所有的技术类事情
+- 网络原理
+- linux 命令
+- 各种命令
+- 各种技巧
+。。。。。。。
