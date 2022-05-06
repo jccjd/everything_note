@@ -1,96 +1,3 @@
-
-## NIC Performace 
-
-- performance metrics
-
-- Factors that impact performance
-
-- Broadcom NIC Performance Tuning Guide and Reports
-
-- Performance Tuning Commonly Used Commands
-
-- iperf/netperf, IP forwarding, DPDK, RoCE perftest
-
-- Debugging Performance issues
-
-  
-
-### Throughput 
-
--  The amount of data that is sent/received in one second
--  Mpps(fps) or Gbps
-
-
-
-|                     | bits on the wire                      | bits               | overhead |
-| ------------------- | ------------------------------------- | ------------------ | -------- |
-| one 64B frame       | (7 + 1 12 ) \* 8 + 64B \* 8 = 672 bit | 64B\*8=512bit      | 23.8%    |
-| iperf TCP MTU=1500B | 20B\*8 +1518B\*8=12305bit             | 1460B\*8=11680 bit | 5%       |
-|                     |                                       |                    |          |
-
-### Latency
-
-- The time required to send/receive a packet
-- One-way ore round-trip (in microseconds or transactions/s)
-
-## Factors that impact NIC performance
-
-| Factors          | Description                                                  |
-| ---------------- | ------------------------------------------------------------ |
-| CPU              | - Frequency <br />- Architecture: IPC (instructions per cycle)<br />-Power mode: Use performance mode, disable processor C states<br />- SMP: Symmetric Multi-Processing<br />- SMT: Use physical cores before using hyper-threaded cores<br />-NUMA:Across NUMA can result in performance degradation |
-| Cache and Memory | Memory bandwidth=Memory frequency(e.g 3200MT/S)\*64bit\*channel_number |
-| PCIe             | PCIe bandwidth= bitrate_per_lane(e.g Gen4 16GT/s)\* lane_number (e.g 16 lanes) |
-| OS/Kernel        | - selinux, firewalld/iptables<br />- irqbalance<br />- Iommu<br />- kernel tcp/ip paramentes, AMD Rome/Milan nohz=off |
-|                  |                                                              |
-|                  |                                                              |
-
-
-
-### Single CPU core: How does Linux receive a network packet
-
-
-
-Tools for determing CPU utilization
-
-- top
-  - hi time spent servicing hardware interrupts
-  - si: time spent servicing software interrupts
-  - us: time runing user processes
-  - sy: time ruing kernel processes
-  - id: time spent in the kernel idle handler
-
-
-
-## NAPI and Interrupt Coalescing
-
-- NAPI(New API)
-  - An interrupt-driven mode by default and switches to polling mode when the flow of incoming packets exceeds a certain threshold
-  - Implemented in bnxt_en ethernet driver
-- Interrupt Coalescing 
-  - A technique in which events which would normally trigger a hardware interrupt are held back, either until a certain amount of work is pending, or a timeout timer triggers 
-  - Lowers CPU utilization, increases throughput,but might increases latency
-  - Lowers CPU utilization, increases throughput, but might increases latency
-  - Changes interrupt coalescing setting by "ethtoo -C"
-    - rx-usescs:how many microseconds after at least 1 packet is received before generating an interrupt 
-    - rx-frames:how many packets are received before generating an interrupt 
-    - adaptive-rx: improve latency under low packet rates and improve throughput under high packer rates 
-
-
-
-## NIC Ring Size
-
-- Tx/RX Ring Size
-
-  - TX/RX ring size is buffer descriptor number of a TX/RX ring
-
-  - NIC HW and driver use descriptor rings for sending and receiving packets. Driver is producer, and NIC HW is consumer
-
-  - Larger ring size provides an improved resiliency against the packet loss ,but increases the cache/memory footprint resulting in a performance penalty
-
-  - Change ring size by "ethtool -G"
-
-    - ethtool -G <devname> tx 20487rx 2047
-
 ## <font color=8670ff> suse 安装</font>
 
 ### <font color=8670ff> 分区选项</font>
@@ -128,6 +35,16 @@ Tools for determing CPU utilization
 5. `sysstat`
 6. `unixODBC`
 
+
+
+## sues 本地源
+
+```
+zypper ar file:///opt/update update
+```
+
+ 
+
 ### port 选项
 
 
@@ -144,6 +61,14 @@ display int bridge-aggregation 11
 undo port link-agg grup 11
 undo interface bridge-agg 11
 link-aggreg mode dynamic
+
+# vlan
+ port link-mode bridge
+ port link-type trunk
+ port trunk permit vlan 1 to 2 99 4094
+
+
+
 # 网络风暴
 undo port trunk permit vlan 1
 port trunk permit vlan 46
@@ -159,12 +84,12 @@ vlan n
 ```sh
 route add -net ip/172.16.0.0 netmask 255.255.255.0 ethx # 添加路由
 route add default gw 10.213.88.1
-
+ethtool -s <网口号> autoneg off speed 10000 duplex full
 ifconfig bond0 add 2.2.2.2 # 双ip
 ip addr add 16.16.16.16/24 dev ens15f0
 # vlan
 ip link add link etho name eth.x type vlan id x
-
+ping  -M  do  -s  8972  <client的ip地址>，8972字
 ip link delete dev eth.0  # 删除vlan
 ip addr add ip_193. dev eth0s
  vi /etc/default/grub
@@ -184,6 +109,16 @@ lldpad -d
 lldptool set-lldp -i ens2 adminStatus=rxtx
 lldptool -t -n -i ens2
 
+ifconfig eth0 hw ether  1E:ED:19:27:1A:B4
+
+ethtool  -i  <网口名>                                    # 查看该网口Bus 号，驱动名及其版本号，固件版本
+lspci –vvv –s  <Bus号>  | egrep –i  ‘pn’               # 查看网卡PN 号
+lspci –vvv –s  <Bus号>  | egrep –i  ‘sn|serial’       # 查看网卡SN 号
+lspci –vvv -s  <Bus号>  | egrep -i speed               # 查看PCIE 速率
+cat /sys/class/net/<网口名>/device/device              # 查看设备 ID
+cat /sys/class/net/<网口名>/device/vendor              # 查看厂商 ID
+cat /sys/class/net/<网口名>/device/subsystem_device   # 查看子设备 ID
+cat /sys/class/net/<网口名>/device/subsystem_vendor   # 查看子厂商 ID 
 
 
 ```
@@ -508,15 +443,249 @@ mdadm --misc --zero-superblock /dev/sdd
 
 mdadm --detail-platform
 mdadm --misc --detail /dev/mdo
+
+nvme id-ctrl /dev/nvme0 | grep -E "cntlid|nn|tnvmcap"
+
+	umount /mnt > /dev/null 
+	mount.cifs -o username=sit,password=h3c@123 //172.16.0.100/d /mnt
+
+	 mount.cifs -o username=sit,password=fql@a20 //172.16.0.100/d /mnt > /dev/null  
+	 
+ 
+zypper ar file:///opt/update update
 ```
 
 
 
+## Windows 认证
+
+SecureBootUEFI
+
+```
+You need to set Platform in "User Mode", Secure Boot in "Standard Mode" and Load Setup Defaults.
+
+You could do it by Restoring Factory Keys:
+
+BIOS - Security - Secure Boot - Restore Factory Keys - Enter
+BIOS - Restart - OS Optimized Defaults - Enabled
+BIOS - Restart - Load Setup Defaults - Enter
+Go to BIOS - Main and check if UEFI Secure Boot is ON.
+
+原因：
+You might be in Setup Mode because you have deleted the Platform Key in your BIOS. Enabling Secure Boot in this state enables your OS to write a new Platform Key (possibly useful for securing a Linux installation). But if you don't do that, you remain in Setup Mode and the Secure Boot State, indicating the Platform Key has been used to secure the system, will remain off.
+
+Your BIOS might have an option to restore the default Platform Key, possibly called "Restore Default Secure Boot Keys", which restores the Microsoft Key. After doing that, your Secure Boot State will be On when booting Windows.
+```
+
+SecureBootUEFIOverP
+
+```
+直接填写YES 不用配置windows pxe
+```
+
+Assurance AQ
+
+```
+连上外网直接跑
+```
+
+BitLocker Tpm+PIN+USB and Recovery Password tests
+
+```
+装上usb 和tpm 和bitlocker 软件
+中间按照提示插拔usb
+默认pin是6个0当要输入PIN 密码时
+
+```
+
+hardware Security Testbility interface test
+
+```
+自己过的莫名其妙
+```
+
+驱动检查
+
+```
+将bios重置，重装系统，最新的chipset 连上外网
+```
+
+##  将日志拷到100盘
+
+```shell
+function collect_log {
+	result_dir=`date +%Y%m%d_%H%M%S`
+	mkdir $result_dir && mv *csv *log *rec $result_dir 
+	umount /mnt > /dev/null 
+	 mount.cifs -o username=sit,password=h3c@123 //172.16.0.100/d /mnt > /dev/null  
+	cp -Rpf $result_dir /mnt/Temp/yuanhui/06_test_result/singledisk >/dev/null &
+	
+	echo -e "\033[31m Test has ended,Please collect result and compare data wth datasheet  \033[0m"
+	echo -e "\033[31m If data can match with datasheet,please input it to excel templet!  \033[0m"
+}
+```
 
 
 
+## ib 模式切换
+
+```
+修改网卡的工作模式：
+Ethernet模式： mlxconfig -d /dev/mst/mt4119_pciconf0 set LINK_TYPE_P1=2
+IB模式： mlxconfig -d /dev/mst/mt4119_pciconf0 set LINK_TYPE_P1=1
+
+```
+
+### 进入刀箱网板
+
+```
+sol connect io 1
+
+```
+
+## 设置交换机ssh 登录
+
+```ssh
+# 开启Stelnet服务器功能。
+[Switch] interface vlan-interface 1
+
+[Switch-Vlan-interface1] ip address 192.168.1.40 255.255.255.0
+
+[Router] ssh server enable
+
+# 设置Stelnet客户端登录用户线的认证方式为AAA认证。
+
+[Router] line vty 0 63
+
+[Router-line-vty0-63] authentication-mode scheme
+
+[Router-line-vty0-63] quit
+
+# 创建设备管理类本地用户client001，并设置密码为明文aabbcc，服务类型为SSH，用户角色为network-admin。
+
+[Router] local-user client001 class manage
+
+[Router-luser-manage-client001] password simple aabbcc
+
+[Router-luser-manage-client001] service-type ssh
+
+[Router-luser-manage-client001] authorization-attribute user-role network-admin
+
+[Router-luser-manage-client001] quit
+```
+
+```
+ Ubuntu 18 安装时卡在66% update-grub处
+已知bug。
+
+可以参考此文档解决：https://unix.stackexchange.com/questions/511289/ubuntu-18-04-server-installation-gets-stuck-at-66-while-runningupdate-grub
+
+方法如下：
+
+在卡在66%时 同时按下Ctrl+Alt+F2键，进入命令行模式，删除prober，执行
+
+rm /target/etc/grub.d/30_os-prober
+查找到dmsetup进程id
+
+ps | grep 'dmsetup create'
+杀掉查找到的进程
+
+kill 67619
+按下Ctrl+Alt+F1键，回到安装OS的图形界面，会发现已经继续正常安装
 
 
+```
+
+## 7.6 源
+
+```
+[redhat7.6]
+ 
+name=my redhat7.6
+ 
+baseurl=file:///mnt/cdrom
+ 
+enable=1
+ 
+gpgcheck=0
+```
+
+## 8源
+
+```
+[localREPO]
+name=localhost8
+baseurl=file:///mnt/BaseOS
+enable=1
+gpgcheck=0
+
+[localREPO_APP]
+name=localhost8_app
+baseurl=file:///mnt/AppStream
+enable=1
+gpgcheck=0
+
+yum clean all
+yum makecache
+```
+
+## Linux做镜像
+
+```ssh
+umount /dev/sdc*
+mkfs.vfat /dev/sda -I
+dd if=imag of=/dev/sdc status=progress
+```
+
+## windows mtu 设置 cmd
+
+```shell
+查询接口的 MTU 值（验证配置结果同）
+netsh interface ipv4 show subinterfaces
+
+设置 MTU
+netsh interface ipv4 set subinterface "本地连接" mtu=9014 store=persistent
+netsh interface ipv4 set subinterface "Ethernet0" mtu=9014 store=persistent
+示例 1：将指定的网络适配器设置为不同的 VLAN ID
+电源外壳
+
+复制
+PS C:\> Set-NetAdapter -Name "Ethernet 1" -VlanID 10\
+
+Get-NetAdapter | select interfaceDescription, name, status,linkSpeed
+netsh interface show interface
+
+netsh interface set interface name 'vlan' admin=disable\enable
+
+netsh interface ip set address name='Ehternet' source=static addr=10 maske=11
+
+Get-NetAdapterAdvancedProperty
+
+
+```
+
+## windows 关闭防火墙
+
+```shell
+关闭防火墙：netsh firewall set opmode mode=disable
+关闭防火墙： netsh advfirewall set allprofiles state off
+```
+
+## ubuntu 本地源
+
+```shell
+ sudo apt-cdrom -m -d=/mnt add
+
+```
+
+## 查看系统版
+
+
+
+```shell
+ lsb_release -a.
+ 
+```
 
 
 
