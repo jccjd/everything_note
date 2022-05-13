@@ -1,4 +1,4 @@
-## <font color=8670ff> suse 安装</font>
+## <font color=8670ff>suse 安装</font>
 
 ### <font color=8670ff> 分区选项</font>
 
@@ -119,7 +119,7 @@ cat /sys/class/net/<网口名>/device/device              # 查看设备 ID
 cat /sys/class/net/<网口名>/device/vendor              # 查看厂商 ID
 cat /sys/class/net/<网口名>/device/subsystem_device   # 查看子设备 ID
 cat /sys/class/net/<网口名>/device/subsystem_vendor   # 查看子厂商 ID 
-
+f
 
 ```
 
@@ -159,7 +159,7 @@ esxcli software vib install -v /tmp/net-i40e-1.3.45-IOEM.550.0.0.131820.x86_64.v
 esxcli software vib remove -n xxx -f # 卸载驱动
 esxcli software vib list # 查询驱动
 esxcfg-nics -l # 查看ESXI上网口的信息、端口、速率、型号、Mac地址等信息
-
+esxcli network nic get -n vmnicx # 查看驱动版本
 ```
 
 ### <font color=8670ff> shell cmd</font>
@@ -517,7 +517,7 @@ function collect_log {
 	result_dir=`date +%Y%m%d_%H%M%S`
 	mkdir $result_dir && mv *csv *log *rec $result_dir 
 	umount /mnt > /dev/null 
-	 mount.cifs -o username=sit,password=h3c@123 //172.16.0.100/d /mnt > /dev/null  
+	 mount.cifs -o username=sit,password=h3c@123 //172.16.0.100/d/temp/lilong /mnt > /dev/null  
 	cp -Rpf $result_dir /mnt/Temp/yuanhui/06_test_result/singledisk >/dev/null &
 	
 	echo -e "\033[31m Test has ended,Please collect result and compare data wth datasheet  \033[0m"
@@ -603,7 +603,7 @@ kill 67619
  
 name=my redhat7.6
  
-baseurl=file:///mnt/cdrom
+baseurl=file:///mnt
  
 enable=1
  
@@ -640,6 +640,8 @@ dd if=imag of=/dev/sdc status=progress
 ## windows mtu 设置 cmd
 
 ```shell
+驱动 ：Get-WindowsDriver -Online -All
+Get-WmiObject Win32_PnPSignedDriver| select DeviceName, Manufacturer, DriverVersion
 查询接口的 MTU 值（验证配置结果同）
 netsh interface ipv4 show subinterfaces
 
@@ -660,8 +662,20 @@ netsh interface set interface name 'vlan' admin=disable\enable
 netsh interface ip set address name='Ehternet' source=static addr=10 maske=11
 
 Get-NetAdapterAdvancedProperty
+## 链接网络资源
+cmdkey /add:172.16.0.100 /user:sit /pass:h3c@123
+1、开启本机远程管理
 
+Copy 
+Enable-PSRemoting
+2、开启 CredSSP 身份验证
 
+Copy 
+Enable-WSManCredSSP -role server
+3、关闭防火墙
+
+Copy 
+netsh advfirewall set currentprofile state off
 ```
 
 ## windows 关闭防火墙
@@ -671,10 +685,14 @@ Get-NetAdapterAdvancedProperty
 关闭防火墙： netsh advfirewall set allprofiles state off
 ```
 
-## ubuntu 本地源
+## ubuntu 本地源/外网设置
 
 ```shell
  sudo apt-cdrom -m -d=/mnt add
+ ifconfig eth1 10.213.88.44/25 
+ nameserver vim /etc/resov.conf
+ gw: router add default gw 10.213.88.1
+ 
 
 ```
 
@@ -684,7 +702,8 @@ Get-NetAdapterAdvancedProperty
 
 ```shell
  lsb_release -a.
- 
+
+/etc/default/grub要么缺少所需的 iommu 值，您尚未运行，sudo update-grub要么sudo update-initramfs -u您尚未重新启动。
 ```
 
 
