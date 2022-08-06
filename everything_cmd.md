@@ -108,8 +108,13 @@ modprobe vfio-pci enable_sriov=1
 lldpad -d
 lldptool set-lldp -i ens2 adminStatus=rxtx
 lldptool -t -n -i ens2
+mlxconfig -d /dev q |grep -i lldp
+
+
+
 
 ifconfig eth0 hw ether  1E:ED:19:27:1A:B4
+
 
 ethtool  -i  <网口名>                                    # 查看该网口Bus 号，驱动名及其版本号，固件版本
 lspci –vvv –s  <Bus号>  | egrep –i  ‘pn’               # 查看网卡PN 号
@@ -452,7 +457,14 @@ nvme id-ctrl /dev/nvme0 | grep -E "cntlid|nn|tnvmcap"
 	 mount.cifs -o username=sit,password=fql@a20 //172.16.0.100/d /mnt > /dev/null  
 	 
  
+
+```
+
+## suse 源
+
+```sh
 zypper ar file:///opt/update update
+qaucli -b all -rg all bk010706.bin
 ```
 
 
@@ -477,7 +489,7 @@ You might be in Setup Mode because you have deleted the Platform Key in your BIO
 Your BIOS might have an option to restore the default Platform Key, possibly called "Restore Default Secure Boot Keys", which restores the Microsoft Key. After doing that, your Secure Boot State will be On when booting Windows.
 ```
 
-SecureBootUEFIOverP
+SecureBootUEFIOverPxe
 
 ```
 直接填写YES 不用配置windows pxe
@@ -531,7 +543,7 @@ function collect_log {
 
 ```
 修改网卡的工作模式：
-Ethernet模式： mlxconfig -d /dev/mst/mt4119_pciconf0 set LINK_TYPE_P1=2
+Ethernet模式：
 IB模式： mlxconfig -d /dev/mst/mt4119_pciconf0 set LINK_TYPE_P1=1
 
 ```
@@ -676,6 +688,30 @@ Enable-WSManCredSSP -role server
 
 Copy 
 netsh advfirewall set currentprofile state off
+
+
+### 共享文件夹
+1. E:是文件位置
+ New-SmbShare -Name "test6" -Path "c:\test6" -Description "Test6 shared" -FullAccess buffallos\adminhuzx -ReadAccess everyone 
+ 
+## windows hyper-v 连接
+1. 修改策略
+gpedit.msc
+Administration templet -> creder-> allow delegating fresh NTLM-only
+添加 
+wsman/*
+termsvr/*
+2. 开启
+# 开启winrm
+winrm quickconfig# winrm安全配置，最后的参数值为 Hyper-V 服务器的主机名（域名）
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "MiniPC-HyperV"# winrm身份验证配置
+Enable-WSManCredSSP -Role client -DelegateComputer "MiniPC-HyperV"
+
+3. 输入用户名
+.\administarotrr
+
+# devmgmt.msc 设备
+ # diskmgmt.msc
 ```
 
 ## windows 关闭防火墙
@@ -689,11 +725,22 @@ netsh advfirewall set currentprofile state off
 
 ```shell
  sudo apt-cdrom -m -d=/mnt add
- ifconfig eth1 10.213.88.44/25 
+ sudo ifconfig eth1 10.213.88.44/24 
  nameserver vim /etc/resov.conf
- gw: router add default gw 10.213.88.1
- 
-
+ gw: sudo  route add default gw 10.213.88.1
+ ## 安装desktop
+ sudo apt-get install ubuntu-desktop
+ 阿里源
+deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ bionic-proposed main restricted universe multiverse
+deb-src http://mirrors.aliyun.com/ubuntu/ bionic-backports main restricted universe multiverse
 ```
 
 ## 查看系统版
@@ -706,5 +753,58 @@ netsh advfirewall set currentprofile state off
 /etc/default/grub要么缺少所需的 iommu 值，您尚未运行，sudo update-grub要么sudo update-initramfs -u您尚未重新启动。
 ```
 
+   
 
+## mlx 网卡升级问题
+
+```shell
+mlxnofedinstall --distro rhel7.6 --force
+```
+
+### python 调用terminal 串口
+
+```shell
+import os 
+os.system("gnome-screenshot --file=this.png")
+os.system('''gnome-terminal -e 'bash -c "ls; exec bash"' ''')
+```
+
+### ubuntu 卡 66%
+
+```
+在卡在66%时 同时按下Ctrl+Alt+F2键，进入命令行模式，删除prober，执行
+
+rm /target/etc/grub.d/30_os-prober
+查找到dmsetup进程id
+
+ps | grep 'dmsetup create'
+杀掉查找到的进程
+
+kill 67619
+按下Ctrl+Alt+F1键，回到安装OS的图形界面，会发现已经继续正常安装
+```
+
+### htop 安装问题
+
+```sh 
+configure: error: You may want to use --disable-unicode or install libncursesw.
+yum install -y ncurses-devel
+./configure&&make&&make install
+```
+
+### 交换机密码默认
+
+```
+line vty 0 63
+auto-execute
+authentication-mode none
+```
+
+## 翻墙
+
+```sh
+# Windows
+https://free886.herokuapp.com/clash # 订阅地址
+https://github.com/Fndroid/clash_for_windows_pkg/releases# 下载地址
+```
 
