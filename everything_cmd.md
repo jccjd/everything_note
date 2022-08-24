@@ -367,7 +367,7 @@ flush privileges;
 drop table user_back # 删除表
 
 # 全库备份
-mysqldump--single-transaction -uroot -proot -A >/tmp/all_20190413.sql
+mysqldump --single-transaction -uroot -proot -A >/tmp/all_20190413.sql
 
 # 全库恢复
 mysql –uroot –proot </tmp/all_20190413.sql
@@ -726,11 +726,12 @@ Enable-WSManCredSSP -Role client -DelegateComputer "MiniPC-HyperV"
 ```shell
  sudo apt-cdrom -m -d=/mnt add
  sudo ifconfig eth1 10.213.88.44/24 
- nameserver vim /etc/resov.conf
+ nameserver vim /etc/resov.conf 114.114.114.114
  gw: sudo  route add default gw 10.213.88.1
  ## 安装desktop
  sudo apt-get install ubuntu-desktop
  阿里源
+ wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo
 deb http://mirrors.aliyun.com/ubuntu/ bionic main restricted universe multiverse
 deb http://mirrors.aliyun.com/ubuntu/ bionic-security main restricted universe multiverse
 deb http://mirrors.aliyun.com/ubuntu/ bionic-updates main restricted universe multiverse
@@ -805,6 +806,91 @@ authentication-mode none
 ```sh
 # Windows
 https://free886.herokuapp.com/clash # 订阅地址
+https://github.com/zu1k/proxypool # 软件
 https://github.com/Fndroid/clash_for_windows_pkg/releases# 下载地址
 ```
 
+> Do not go gentle into that good night
+>
+> Old age should burn and rave at close of day;
+>
+> Rage, rage against the dying of the light.
+>
+> Though wise men at their end know dark is right 
+>
+> Because their words had forked no lighting 
+>
+> they Do not go gentle into that good night
+>
+> Do not go gentle into that good night
+>
+> Good men, the last wave by cring how bright 
+>
+> Their frail deeds might have danced in a green bay
+>
+> Rage rage against the dying of the light
+>
+> Wild men who caught and sang the sun in flight 
+>
+> And learn, too late they grieved it on its way
+>
+> Do not go gentle into that good night
+>
+> Grave men, near death who see with blinding sight
+>
+> Blind eyes could blaze like meters and be gay
+>
+> Rage, rage against the dying of the light
+>
+> And you, my father there on the sad height
+>
+> Curse, bless me now with your fierce tears, I pray.
+>
+> Do not go gentle into that good night
+>
+> Rage, rage against the dying of the light.
+>
+> 
+
+Do not go gentle into that good night
+
+Old age should burn and rave at close of day
+
+
+
+## 密码本
+
+
+
+```sh
+http:172.16.95.27 Lyj0096mn root
+https://172.16.1.12/#/login - AD DHCP  password:Lyj0096mn
+https://172.16.11.22/index.html - cobbler pxe
+https://192.168.1.135/index.html - 100盘
+https://172.16.22.136/index.html - suse tc
+https://172.16.10.26/#/login - web server
+https://172.16.14.97/index.html -  kvm vm
+https://172.16.23.242/index.html - 2022-tc  pwd `1q
+172.16.1.128 pc-window 认证
+```
+
+## 防火墙
+
+```sh
+添加
+
+firewall-cmd --zone=public --add-port=80/tcp --permanent   （--permanent永久生效，没有此参数重启后失效）
+
+重新载入
+
+firewall-cmd --reload
+
+查看
+
+firewall-cmd --zone=public --query-port=80/tcp
+
+删除
+
+firewall-cmd --zone=public --remove-port=80/tcp --permanent
+```
+https://zhuanlan.zhihu.com/p/137251716
