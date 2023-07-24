@@ -1,4 +1,3 @@
-## <font color=8670ff>suse 安装</font>
 
 ### <font color=8670ff> 分区选项</font>
 
@@ -77,6 +76,10 @@ port link-type trunk
 port trunk permit vlan n_id
 dis vlan 
 vlan n
+
+# rang ss to 
+interface range 1 to 2 
+undo shutdown
 ```
 
 ## <font color=8670ff>网络命令</font>
@@ -352,7 +355,7 @@ Ashen one, hearest thou my voice still
 
 ## <font color=8670ff> Mysql</font>
 
-```mysql
+```sql
 # 开启局域网访问
 mysql>use mysql;
 mysql>update user set host = '%' where user ='root';
@@ -363,7 +366,15 @@ mysql>flush privileges;
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%'  IDENTIFIED BY 'admin123'  WITH GRANT OPTION;
 flush privileges;
 "admin123"为密码。
-
+# 还要开放端口
+yum -y install iptables-services
+[root@localhost ~]# cat /etc/sysconfig/iptables
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+COMMIT
+[root@localhost ~]#
 drop table user_back # 删除表
 
 # 全库备份
@@ -385,11 +396,12 @@ reset slave
 
 ## mysql 配置主从同步
 
+
 ```
 
 ## 硬盘
 
-```sh
+```shell
 smartctl -a /dev/sda | grep -i seri # 查看sn号
 grep -i crc * # crc 查询
 grep err * # fio 无error
@@ -399,9 +411,24 @@ lsscsi #查看盘的 号
 
 arcconf getconfig 1 ar #逻辑盘
 arcconf getconfig 1 pd | grep -i slot  # slot
-arcconf create 1 logicaldrive 1024 0 0 4 0 5 # raid 0 创建
-arcconf delete 1 logicaldrive 0 # 删除逻辑盘
+arcconf create 1 logicaldrive (1024 or max) 0 0 4 0 5 # raid 
+0 创建
+arcconf identify 1 device 0 1 # 电灯
+arcconf identify 1 logicaldrive 0 time 180 # diandneg
+
+arcconf DELETE 1 logicaldrive 0         # 删除第1个控制器的第0个逻辑盘
+arcconf DELETE 1 logicaldrive ALL       # 删除第1个控制器的所有逻辑盘
+arcconf getconfig 1 pd |grep -5 -i "sdd" # 硬盘查看位置
+arcconf setstate 1 device 0 x DDD #  使物理盘离线） 上线时重新插拔
+
+# 2.2 测试磁盘写能力
+time dd if=/dev/zero of=/testw.dbf bs=4k count=100000
+1.
+# 因为/dev//zero是一个伪设备，它只产生空字符流，对它不会产生IO，所以，IO都会集中在of文件中，of文件只用于写，所以这个命令相当于测试磁盘的写能力。命令结尾添加oflag=direct将跳过内存缓存，添加oflag=sync将跳过hdd缓存。
+
 #格式化盘
+
+
 [root@stduy ~]# partprobe /dev/sdb
 [root@stduy ~]# mkfs -t ext4 /dev/sdb1
 [ -d /sys/firmware/efi ] && echo UEFI || echo BIOS # 查看系统是biso
@@ -462,18 +489,20 @@ nvme id-ctrl /dev/nvme0 | grep -E "cntlid|nn|tnvmcap"
 
 ## suse 源
 
-```sh
+```shell
 zypper ar file:///opt/update update
 qaucli -b all -rg all bk010706.bin
 ```
 
 
 
-## Windows 认证
+## Windows
 
 SecureBootUEFI
 
 ```
+
+只关闭 pk
 You need to set Platform in "User Mode", Secure Boot in "Standard Mode" and Load Setup Defaults.
 
 You could do it by Restoring Factory Keys:
@@ -495,47 +524,57 @@ SecureBootUEFIOverPxe
 直接填写YES 不用配置windows pxe
 ```
 
-Assurance AQ
 
-```
-连上外网直接跑
-```
 
-BitLocker Tpm+PIN+USB and Recovery Password tests
-
-```
-装上usb 和tpm 和bitlocker 软件
-中间按照提示插拔usb
-默认pin是6个0当要输入PIN 密码时
 
 ```
 
-hardware Security Testbility interface test
+TPM 2.0 UEFI preboot interface test
 
-```
-自己过的莫名其妙
-```
-
-驱动检查
-
-```
-将bios重置，重装系统，最新的chipset 连上外网
+```sh
+TPM 中的SHA1 关闭
 ```
 
-##  将日志拷到100盘
+
+
+
+## tpm
 
 ```shell
-function collect_log {
-	result_dir=`date +%Y%m%d_%H%M%S`
-	mkdir $result_dir && mv *csv *log *rec $result_dir 
-	umount /mnt > /dev/null 
-	 mount.cifs -o username=sit,password=h3c@123 //172.16.0.100/d/temp/lilong /mnt > /dev/null  
-	cp -Rpf $result_dir /mnt/Temp/yuanhui/06_test_result/singledisk >/dev/null &
-	
-	echo -e "\033[31m Test has ended,Please collect result and compare data wth datasheet  \033[0m"
-	echo -e "\033[31m If data can match with datasheet,please input it to excel templet!  \033[0m"
-}
+tpm 最后一项关闭
+EDK2 Menu → Socket Configuration → Processor Configuration → MSR Lock Control <Enable>
+
+EDK2 Menu → Socket Configuration → Processor Configuration → Lock Chipset <Enable>
+
+EDK2 Menu → Socket Configuration → Processor Configuration → VMX <Enable>
+
+EDK2 Menu → Socket Configuration → Processor Configuration → Enable SMX <Enable>
+
+EDK2 Menu → Socket Configuration → Processor Configuration → Enable Intel TXT <Enable>
+
+EDK2 Menu → Socket Configuration → IIO Configuration → Intel VT for Directed I/O (VT-d) → Intel VT for Directed I/O <Enable>
+
+
+MSFT_NVCI_Index.nsh SHA256 Example
+执行以下三条命令：  
+Tpm2PoProv.nsh SHA256 EXAMPLE  
+Tpm2TxtProv.nsh SHA256 EXAMPLE  
+Tpm2SgxiProv.nsh SHA256 EXAMPLE
+
+
+getsec64.efi -l SENTER -i # 最后执行下这个，进入txt环境  
+
+ 
+
 ```
+
+
+
+
+•	WS2022 release: https://support.microsoft.com/en-gb/topic/march-14-2023-kb5023705-os-build-20348-1607-31770c64-430e-4b0e-8eb4-175980e29f3b
+•	Hotfix Search: https://www.catalog.update.microsoft.com/home.aspx
+
+
 
 
 
@@ -557,7 +596,7 @@ sol connect io 1
 
 ## 设置交换机ssh 登录
 
-```ssh
+```shell
 # 开启Stelnet服务器功能。
 [Switch] interface vlan-interface 1
 
@@ -610,7 +649,7 @@ kill 67619
 
 ## 7.6 源
 
-```
+```shell
 [redhat7.6]
  
 name=my redhat7.6
@@ -624,7 +663,7 @@ gpgcheck=0
 
 ## 8源
 
-```
+```shell
 [localREPO]
 name=localhost8
 baseurl=file:///mnt/BaseOS
@@ -643,7 +682,7 @@ yum makecache
 
 ## Linux做镜像
 
-```ssh
+```shell
 umount /dev/sdc*
 mkfs.vfat /dev/sda -I
 dd if=imag of=/dev/sdc status=progress
@@ -719,7 +758,18 @@ Enable-WSManCredSSP -Role client -DelegateComputer "MiniPC-HyperV"
 ```shell
 关闭防火墙：netsh firewall set opmode mode=disable
 关闭防火墙： netsh advfirewall set allprofiles state off
+
+
 ```
+
+### window 自动开机
+
+```shell
+https://learn.microsoft.com/en-us/sysinternals/downloads/autologon -- 文档
+https://download.sysinternals.com/files/AutoLogon.zip --- 程序
+```
+
+
 
 ## ubuntu 本地源/外网设置
 
@@ -772,7 +822,7 @@ os.system('''gnome-terminal -e 'bash -c "ls; exec bash"' ''')
 
 ### ubuntu 卡 66%
 
-```
+```shell
 在卡在66%时 同时按下Ctrl+Alt+F2键，进入命令行模式，删除prober，执行
 
 rm /target/etc/grub.d/30_os-prober
@@ -787,7 +837,7 @@ kill 67619
 
 ### htop 安装问题
 
-```sh 
+```shell
 configure: error: You may want to use --disable-unicode or install libncursesw.
 yum install -y ncurses-devel
 ./configure&&make&&make install
@@ -795,7 +845,7 @@ yum install -y ncurses-devel
 
 ### 交换机密码默认
 
-```
+```shell
 line vty 0 63
 auto-execute
 authentication-mode none
@@ -803,7 +853,7 @@ authentication-mode none
 
 ## 翻墙
 
-```sh
+```shell
 # Windows
 https://free886.herokuapp.com/clash # 订阅地址
 https://github.com/zu1k/proxypool # 软件
@@ -850,35 +900,35 @@ https://github.com/Fndroid/clash_for_windows_pkg/releases# 下载地址
 >
 > Rage, rage against the dying of the light.
 >
-> 
+> Do not go gentle into that good night
+>
+> Old age should burn and rave at close of day
+>
+> rage, rage against the dying of the light
+>
+> though wise men at their end know dark is right
+>
+> because their words had forked no lightning they 
+>
+> do not go gentle into that good night
 
-Do not go gentle into that good night
-
-Old age should burn and rave at close of day
 
 
 
-## 密码本
 
 
 
-```sh
-http:172.16.95.27 Lyj0096mn root
-https://172.16.1.12/#/login - AD DHCP  password:Lyj0096mn
-https://172.16.11.22/index.html - cobbler pxe
-https://192.168.1.135/index.html - 100盘
-https://172.16.22.136/index.html - suse tc
-https://172.16.10.26/#/login - web server
-https://172.16.14.97/index.html -  kvm vm
-https://172.16.23.242/index.html - 2022-tc  pwd `1q
-172.16.1.128 pc-window 认证
-```
+
+
+
+
+
 
 ## 防火墙
 
-```sh
+```shell
 添加
-
+iptables
 firewall-cmd --zone=public --add-port=80/tcp --permanent   （--permanent永久生效，没有此参数重启后失效）
 
 重新载入
@@ -892,5 +942,147 @@ firewall-cmd --zone=public --query-port=80/tcp
 删除
 
 firewall-cmd --zone=public --remove-port=80/tcp --permanent
+
+
+
 ```
-https://zhuanlan.zhihu.com/p/137251716
+
+
+
+### Oracle Linux 
+
+> After installing Oracle Linux 8.6 from ISO, configure yum to include the latest applicable Oracle Linux 8 and UEK R7 repositories and install the required UEK R7 packages. The dnf utility will update any necessary dependent packages. Reboot the system with the new kernel after completing the install:
+
+```shell
+dnf install oraclelinux-release-el8
+
+dnf config-manager --enable ol8_UEKR7
+
+dnf install kernel-uek-5.15.0-3.60.5.1.el8uek -y
+```
+
+
+
+
+
+> Oracle Linux 9 with UEK R7
+> After installing Oracle Linux 9.0 from ISO, configure yum to include the latest applicable Oracle Linux 9 and UEK R7 repositories and install the required UEK R7 packages. The dnf utility will update any necessary dependent packages. Reboot the system with the new kernel after completing the install:
+
+```sh
+dnf install oraclelinux-release-el9 -y
+dnf config-manager --enable ol9_UEKR7 -y
+dnf install kernel-uek-5.15.0-3.60.5.1.el9uek -y
+```
+
+
+oracle 8 urk 6
+```shell
+dnf install oraclelinux-release-el8
+dnf config-manager --enable ol8_UEKR6
+dnf install kernel-uek-5.4.17-2136.312.3.4.el8uek
+
+```
+
+```shell
+
+yum install sysstat zip bc libaio sos kexec-tools libibverbs libpmemblk librados2 librbd1 fio iperf3  python3 -y fio-engine-libaio
+
+
+ export http_proxy=http://172.16.69.89:8080
+export https_proxy=http://172.16.69.89:8080
+
+
+```
+
+
+
+
+
+# vmware 8
+
+
+
+镜像拷贝到NFS 要用 `vmkfstools`拷贝
+
+
+
+iptables
+
+
+
+```shell
+
+esxcfg-advcfg -s hostname /Misc/hostname      # 更改主机名
+esxcli network firewall set --enabled false   # 关闭防火墙
+vi  /etc/systemd/network/99-dhcp-en.network
+esxcli system time set -y 2023 -M 3 -d 20 -H 14 -m 41 -s 00
+
+vi  /etc/systemd/network/99-dhcp-en.network
+
+esxcli software vib install -d /vmfs/volumes/datastore1/ESXi670-202008001.zip
+
+10.1.1.1        host1.server.com host1
+10.1.1.2        host2.server.com host2
+10.1.1.5        win.server.com win
+10.1.1.8        agent.server.com agent
+10.1.1.7        vcsa.server.com vcsa
+10.1.1.27        nfs.server.com nfs
+10.1.1.15       u3.server.com u3
+
+vcsa.server.com
+administrator@vsphere.local
+Pass@123
+datastore1
+vmnic0, vmnic1,vmnic2 
+10.1.1.123
+6C:E5:F7:00:00:15
+admin
+Password@_
+NFS/vmdk
+10.1.1.124
+88:2A:5E:6A:26:26
+datastore2
+```
+
+
+
+测试项 配置
+
+`Single_Host_Test::SGX::Check_SGX`
+
+1. 将内存白槽插满
+2. `BIOS-Advanced-Socket Configuration-Processor Configuration`，按`ctrl+shift+F8`找到`Total Memory Encryption (TME)`（在最后面），设置为enabled 
+3. `BIOS-Advanced-Socket Configuration-Common RefCode Configuration-numa`  enabled 
+4. `BIOS-Advanced-Socket Configuration-Common RefCode Configuration-UMA-Based Clustering-all2all `
+5. `BIOS-Advanced-Socket Configuration-Memory Configuration-Memory RAS Configuration-ADDDC Sparing-enabled`   disabled
+6. `BIOS-Advanced-Socket Configuration-Processor Configuration` 这里把SGX打开
+
+
+
+
+
+# m.2 的盘序固定
+
+```shell
+# 第1章的方法仅仅能保证安装时M.2的硬盘在最前面，即/dev/sda，但是在重启后这个顺序将不能保证，因此本章的目的是如果将这个配置固化下来。详细步骤如下：
+
+# 1.OS启动后，在系统文件/boot/efi/EFI/centos/grub.cfg中增加
+rdloaddriver=megaraid_sas rdloaddriver=mpt3sas
+```
+
+```shell
+PN号: lspci -vvv- n -s bus \|grep -i '\[PN]'
+SN号: lspci -vvv- n -s bus \|grep -i '\[SN]'
+
+Vendor ID|15b3|setpci -s bus号 0.l
+Device ID|1017|setpci -s bus号 0.l
+SubVendor ID|15b3|setpci -s bus号 2c.l
+Subdevice ID|0020|setpci -s bus号 2c.l
+```
+
+
+
+
+
+
+
