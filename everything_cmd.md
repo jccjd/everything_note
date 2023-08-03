@@ -1,4 +1,6 @@
 
+
+
 ### <font color=8670ff> 分区选项</font>
 
 主要的分区
@@ -518,55 +520,8 @@ You might be in Setup Mode because you have deleted the Platform Key in your BIO
 Your BIOS might have an option to restore the default Platform Key, possibly called "Restore Default Secure Boot Keys", which restores the Microsoft Key. After doing that, your Secure Boot State will be On when booting Windows.
 ```
 
-SecureBootUEFIOverPxe
-
-```
-直接填写YES 不用配置windows pxe
-```
 
 
-
-
-```
-
-TPM 2.0 UEFI preboot interface test
-
-```sh
-TPM 中的SHA1 关闭
-```
-
-
-
-
-## tpm
-
-```shell
-tpm 最后一项关闭
-EDK2 Menu → Socket Configuration → Processor Configuration → MSR Lock Control <Enable>
-
-EDK2 Menu → Socket Configuration → Processor Configuration → Lock Chipset <Enable>
-
-EDK2 Menu → Socket Configuration → Processor Configuration → VMX <Enable>
-
-EDK2 Menu → Socket Configuration → Processor Configuration → Enable SMX <Enable>
-
-EDK2 Menu → Socket Configuration → Processor Configuration → Enable Intel TXT <Enable>
-
-EDK2 Menu → Socket Configuration → IIO Configuration → Intel VT for Directed I/O (VT-d) → Intel VT for Directed I/O <Enable>
-
-
-MSFT_NVCI_Index.nsh SHA256 Example
-执行以下三条命令：  
-Tpm2PoProv.nsh SHA256 EXAMPLE  
-Tpm2TxtProv.nsh SHA256 EXAMPLE  
-Tpm2SgxiProv.nsh SHA256 EXAMPLE
-
-
-getsec64.efi -l SENTER -i # 最后执行下这个，进入txt环境  
-
- 
-
-```
 
 
 
@@ -587,12 +542,6 @@ IB模式： mlxconfig -d /dev/mst/mt4119_pciconf0 set LINK_TYPE_P1=1
 
 ```
 
-### 进入刀箱网板
-
-```
-sol connect io 1
-
-```
 
 ## 设置交换机ssh 登录
 
@@ -949,39 +898,8 @@ firewall-cmd --zone=public --remove-port=80/tcp --permanent
 
 
 
-### Oracle Linux 
-
-> After installing Oracle Linux 8.6 from ISO, configure yum to include the latest applicable Oracle Linux 8 and UEK R7 repositories and install the required UEK R7 packages. The dnf utility will update any necessary dependent packages. Reboot the system with the new kernel after completing the install:
-
-```shell
-dnf install oraclelinux-release-el8
-
-dnf config-manager --enable ol8_UEKR7
-
-dnf install kernel-uek-5.15.0-3.60.5.1.el8uek -y
-```
 
 
-
-
-
-> Oracle Linux 9 with UEK R7
-> After installing Oracle Linux 9.0 from ISO, configure yum to include the latest applicable Oracle Linux 9 and UEK R7 repositories and install the required UEK R7 packages. The dnf utility will update any necessary dependent packages. Reboot the system with the new kernel after completing the install:
-
-```sh
-dnf install oraclelinux-release-el9 -y
-dnf config-manager --enable ol9_UEKR7 -y
-dnf install kernel-uek-5.15.0-3.60.5.1.el9uek -y
-```
-
-
-oracle 8 urk 6
-```shell
-dnf install oraclelinux-release-el8
-dnf config-manager --enable ol8_UEKR6
-dnf install kernel-uek-5.4.17-2136.312.3.4.el8uek
-
-```
 
 ```shell
 
@@ -993,71 +911,6 @@ export https_proxy=http://172.16.69.89:8080
 
 
 ```
-
-
-
-
-
-# vmware 8
-
-
-
-镜像拷贝到NFS 要用 `vmkfstools`拷贝
-
-
-
-iptables
-
-
-
-```shell
-
-esxcfg-advcfg -s hostname /Misc/hostname      # 更改主机名
-esxcli network firewall set --enabled false   # 关闭防火墙
-vi  /etc/systemd/network/99-dhcp-en.network
-esxcli system time set -y 2023 -M 3 -d 20 -H 14 -m 41 -s 00
-
-vi  /etc/systemd/network/99-dhcp-en.network
-
-esxcli software vib install -d /vmfs/volumes/datastore1/ESXi670-202008001.zip
-
-10.1.1.1        host1.server.com host1
-10.1.1.2        host2.server.com host2
-10.1.1.5        win.server.com win
-10.1.1.8        agent.server.com agent
-10.1.1.7        vcsa.server.com vcsa
-10.1.1.27        nfs.server.com nfs
-10.1.1.15       u3.server.com u3
-
-vcsa.server.com
-administrator@vsphere.local
-Pass@123
-datastore1
-vmnic0, vmnic1,vmnic2 
-10.1.1.123
-6C:E5:F7:00:00:15
-admin
-Password@_
-NFS/vmdk
-10.1.1.124
-88:2A:5E:6A:26:26
-datastore2
-```
-
-
-
-测试项 配置
-
-`Single_Host_Test::SGX::Check_SGX`
-
-1. 将内存白槽插满
-2. `BIOS-Advanced-Socket Configuration-Processor Configuration`，按`ctrl+shift+F8`找到`Total Memory Encryption (TME)`（在最后面），设置为enabled 
-3. `BIOS-Advanced-Socket Configuration-Common RefCode Configuration-numa`  enabled 
-4. `BIOS-Advanced-Socket Configuration-Common RefCode Configuration-UMA-Based Clustering-all2all `
-5. `BIOS-Advanced-Socket Configuration-Memory Configuration-Memory RAS Configuration-ADDDC Sparing-enabled`   disabled
-6. `BIOS-Advanced-Socket Configuration-Processor Configuration` 这里把SGX打开
-
-
 
 
 
